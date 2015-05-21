@@ -9,5 +9,5 @@ console.log("Listening on port: "+port);
 
 
 app.get('/api', function(req, res) {
-  res.send(200);
+  res.send({name:req.query.name});
 });
