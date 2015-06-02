@@ -24,35 +24,59 @@ app.get('/api', function(req, res) {
   res.send({name:req.query.name});
 });
 
-// pio-api.heroku.com/api/newUser?email=kusdkdjfgskjdgfjxg&pass=skaskdjhkdjhksjdjhf
-app.get('/api/newUser', function(req, res) {
+
+/**
+ * A new user consists of an email, a password, and a type all encoded to protect the user's data
+ *
+ * ex. pio-api.heroku.com/api/newUser?email=kusdkdjfgskjdgfjxg&pass=skaskdjhkdjhksjdjhf&type=yuegjhbn
+ */
+app.get('/api/users/new', function(req, res) {
+  
+  if(!(req.query.email && req.query.pass && req.query.type)) {
+    // invalid user post
+    var badData = undefined;
+    if(!req.query.email) {
+      badData = "email";
+    } else if(!req.query.pass) {
+      badData = "pass";
+    } else if(!req.query.type) {
+      badData = "type";
+    }
+    res.status(400).send({
+      error:"bad data: "+badData
+    });
+  }
   
   var user = {
     email: req.query.email,
-    pass: req.query.pass
+    pass: req.query.pass,
+    type: req.query.type
   };
   
   MongoClient.connect(connectQuery, function(err, db) {
     if (err) {
       console.log("error connecting to the database for: "+req.ip);
       console.log(err);
+      res.status(500).send({
+        error:"Could not connect to database, see server logs or contact admin"
+      });
       return;
     }
     
     var collection = db.collection('pio-api-collection');
     
-    
-    
     collection.update({'name':'profiles'}, {$push:{profiles:user}}, function(err, result) {
       if(err) {
         console.log("couldnt save user data for "+JSON.stringify(user));
         console.log(err);
+        res.status(500).send({
+          error:"Could not connect to database, see server logs or contact admin"
+        });
         return    
       }
+      res.status(200).send();
     });
   });
-  
-  res.send({msg: "i tried"});
 });
   //   var collection = db.collection('profiles');
   //   // get the document for the user
