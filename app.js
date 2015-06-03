@@ -42,65 +42,47 @@ app.get('/api/users/new', function(req, res) {
     } else if(!req.query.type) {
       badData = "type";
     }
+    // 400: Bad Data
     res.status(400).send({
       error:"bad data: "+badData
     });
   }
   
+  // create a user object to be stored in the database
   var user = {
     email: req.query.email,
     pass: req.query.pass,
     type: req.query.type
   };
   
+  // connect to the database
   MongoClient.connect(connectQuery, function(err, db) {
     if (err) {
       console.log("error connecting to the database for: "+req.ip);
       console.log(err);
+      // 500: internal server error
       res.status(500).send({
         error:"Could not connect to database, see server logs or contact admin"
       });
       return;
     }
     
+    // get the collection
     var collection = db.collection('pio-api-collection');
     
+    // update the collection by adding the user object to the profiles array
     collection.update({'name':'profiles'}, {$push:{profiles:user}}, function(err, result) {
       if(err) {
         console.log("couldnt save user data for "+JSON.stringify(user));
         console.log(err);
+        // 500: internal server error
         res.status(500).send({
           error:"Could not connect to database, see server logs or contact admin"
         });
         return    
       }
+      // it worked
       res.status(200).send();
     });
   });
 });
-  //   var collection = db.collection('profiles');
-  //   // get the document for the user
-  //   collection.findOne({'user':user}, function(err, item) {
-  //     if(err) {
-  //       console.log("error getting the document for user "+user);
-  //       console.log(err);
-  //       return;
-  //     }
-  //     if(!item) {
-  //       item = {'user':user};
-  //       collection.insert(item);
-  //     }
-  //     
-  //     if(!item.latlngs) {
-  //       item.latlngs = [];
-  //     }
-  //     
-  //     item.latlngs.push({'lat':lat, 'lng':lng, 'timestamp':timestamp});
-  //     
-  //     collection.update({'user':user}, {$set:{latlngs:item.latlngs}}, function(err, result) {
-  //       if(err) {
-  //         console.log("couldnt save latlngs for "+user);
-  //         return;
-  //       }
-  //     });
-  //   });
