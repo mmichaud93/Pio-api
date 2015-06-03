@@ -24,7 +24,6 @@ app.get('/api', function(req, res) {
   res.send({name:req.query.name});
 });
 
-
 /**
  * A new user consists of an email, a password, and a type all encoded to protect the user's data
  *
