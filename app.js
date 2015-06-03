@@ -24,42 +24,64 @@ app.get('/api', function(req, res) {
   res.send({name:req.query.name});
 });
 
-app.get('/api/newUser', function(req, res) {
+/**
+ * A new user consists of an email, a password, and a type all encoded to protect the user's data
+ *
+ * ex. pio-api.heroku.com/api/newUser?email=kusdkdjfgskjdgfjxg&pass=skaskdjhkdjhksjdjhf&type=yuegjhbn
+ */
+app.get('/api/users/new', function(req, res) {
+  
+  if(!(req.query.email && req.query.pass && req.query.type)) {
+    // invalid user post
+    var badData = undefined;
+    if(!req.query.email) {
+      badData = "email";
+    } else if(!req.query.pass) {
+      badData = "pass";
+    } else if(!req.query.type) {
+      badData = "type";
+    }
+    // 400: Bad Data
+    res.status(400).send({
+      error:"bad data: "+badData
+    });
+  }
+  
+  // create a user object to be stored in the database
+  var user = {
+    email: req.query.email,
+    pass: req.query.pass,
+    type: req.query.type
+  };
+  
+  // connect to the database
   MongoClient.connect(connectQuery, function(err, db) {
-    if(err) {
+    if (err) {
       console.log("error connecting to the database for: "+req.ip);
       console.log(err);
+      // 500: internal server error
+      res.status(500).send({
+        error:"Could not connect to database, see server logs or contact admin"
+      });
       return;
     }
     
-  //   var collection = db.collection('profiles');
-  //   // get the document for the user
-  //   collection.findOne({'user':user}, function(err, item) {
-  //     if(err) {
-  //       console.log("error getting the document for user "+user);
-  //       console.log(err);
-  //       return;
-  //     }
-  //     if(!item) {
-  //       item = {'user':user};
-  //       collection.insert(item);
-  //     }
-  //     
-  //     if(!item.latlngs) {
-  //       item.latlngs = [];
-  //     }
-  //     
-  //     item.latlngs.push({'lat':lat, 'lng':lng, 'timestamp':timestamp});
-  //     
-  //     collection.update({'user':user}, {$set:{latlngs:item.latlngs}}, function(err, result) {
-  //       if(err) {
-  //         console.log("couldnt save latlngs for "+user);
-  //         return;
-  //       }
-  //     });
-  //   });
+    // get the collection
+    var collection = db.collection('pio-api-collection');
+    
+    // update the collection by adding the user object to the profiles array
+    collection.update({'name':'profiles'}, {$push:{profiles:user}}, function(err, result) {
+      if(err) {
+        console.log("couldnt save user data for "+JSON.stringify(user));
+        console.log(err);
+        // 500: internal server error
+        res.status(500).send({
+          error:"Could not connect to database, see server logs or contact admin"
+        });
+        return    
+      }
+      // it worked
+      res.status(200).send();
+    });
   });
-  
-  
-  
 });
