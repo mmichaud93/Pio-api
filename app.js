@@ -99,21 +99,29 @@ app.get('/api/users/exist', function(req, res)
     return;
   }
   
+  var collection = db.collection('pio-api-collection');
   var emailCollection = collection.find(
-  {
-    'name':'profiles',
-    'profiles':{
-      $in: [
-      {
-        'email':email
-      }
-    ]
+    {
+      'name':'profiles',
+      'profiles.email':email
     }
+    
   }
 );
 
-if(email != NULL){
+
+if(emailCollection == email){
   res.status(200).send({exist:true});
+  return
+}
+else{
+  res.status(200).send({exist:false});
+  return
 }
  
+<<<<<<< HEAD
 }
+=======
+});
+});
+>>>>>>> c794240... for realz 2
