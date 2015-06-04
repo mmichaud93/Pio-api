@@ -93,40 +93,6 @@ app.get('/api/users/exist', function(req, res)
   var email = req.query.email;
   
   MongoClient.connect(connectQuery, function(err, db) {
-<<<<<<< HEAD
-  if(err) {
-    console.log("error connecting to the database");
-    console.log(err);
-    return;
-  }
-  
-  var collection = db.collection('pio-api-collection');
-  var emailCollection = collection.find(
-    {
-      'name':'profiles',
-      'profiles.email':email
-    }
-    
-  }
-);
-
-
-if(emailCollection == email){
-  res.status(200).send({exist:true});
-  return
-}
-else{
-  res.status(200).send({exist:false});
-  return
-}
- 
-<<<<<<< HEAD
-}
-=======
-});
-});
->>>>>>> c794240... for realz 2
-=======
     if(err) {
       console.log("error connecting to the database");
       console.log(err);
@@ -162,4 +128,3 @@ else{
     );
   });
 });
->>>>>>> 5cc76e3... 9
