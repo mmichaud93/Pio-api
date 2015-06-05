@@ -43,8 +43,10 @@ app.get('/api/users/new', function(req, res) {
     }
     // 400: Bad Data
     res.status(400).send({
-      error:"bad data: "+badData
+      code : 400,
+      msg : "bad data: "+badData
     });
+    return;
   }
   
   // create a user object to be stored in the database
@@ -61,7 +63,8 @@ app.get('/api/users/new', function(req, res) {
       console.log(err);
       // 500: internal server error
       res.status(500).send({
-        error:"Could not connect to database, see server logs or contact admin"
+        code : 500,
+        msg : "Could not connect to database, see server logs or contact admin"
       });
       return;
     }
@@ -76,12 +79,16 @@ app.get('/api/users/new', function(req, res) {
         console.log(err);
         // 500: internal server error
         res.status(500).send({
-          error:"Could not connect to database, see server logs or contact admin"
+          code : 500,
+          msg : "Could not connect to database, see server logs or contact admin"
         });
         return    
       }
       // it worked
-      res.status(200).send();
+      res.status(200).send({
+        code : 200,
+        msg : "success"
+      });
     });
   });
 });
