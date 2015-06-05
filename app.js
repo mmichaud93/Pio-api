@@ -103,7 +103,8 @@ app.get('/api/users/exist', function(req, res)
       console.log("error connecting to the database");
       console.log(err);
       res.status(500).send({
-        error:"Could not connect to database, see server logs or contact admin"
+        code : 500,
+        msg : "Could not connect to database, see server logs or contact admin"
       });
       return;
     }
@@ -117,17 +118,24 @@ app.get('/api/users/exist', function(req, res)
           console.log("could not find profiles");
           console.log(err);
           res.status(500).send({
-            error:"Could not connect to database, see server logs or contact admin"
+            code : 500,
+            msg : "Could not find profiles"
           });
           return;
         }
 
         if(doc!=null){
-          res.status(200).send({exist:true});
+          res.status(200).send({
+            code : 200,
+            msg : "true"
+          });
           return;
         }
         else{
-          res.status(200).send({exist:false});
+          res.status(200).send({
+            code : 200,
+            msg : "false"
+          });
           return;
         }
       }
