@@ -142,3 +142,54 @@ app.get('/api/users/exist', function(req, res)
     );
   });
 });
+
+app.get('/api/users/login', function(req,res)
+{
+  var email = req.query.email;
+  var pass = req.query.pass;
+
+  MongoClient.connect(connectQuery, function(err, db) {
+    if(err) {
+      console.log("error connecting to the database");
+      console.log(err);
+      res.status(500).send({
+        code : 500,
+        msg : "Could not connect to database, see server logs or contact admin"
+      });
+      return;
+    }
+    var collection = db.collection('pio-api-collection');
+      var emailCollection = collection.findOne(
+      {
+        'name':'profiles',
+        'profiles.email':email,
+        'profiles.pass': pass,
+      }, function(err, doc) {
+        if(err) {
+          console.log("could not find profiles");
+          console.log(err);
+          res.status(500).send({
+            code : 500,
+            msg : "Could not find profiles"
+          });
+          return;
+        }
+
+        if(doc!=null){
+          res.status(200).send({
+            code : 200,
+            msg : "true"
+          });
+          return;
+        }
+        else{
+          res.status(200).send({
+            code : 200,
+            msg : "false"
+          });
+          return;
+         }
+      }
+    );
+  });
+});
