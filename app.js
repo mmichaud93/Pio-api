@@ -112,23 +112,10 @@ app.get('/api/users/add/lat', function(req, res) {
     var collection = db.collection('pio-api-collection');
     
     // update the collection by adding the user object to the profiles array
-    collection.insert({'lat':}, {$push:{profiles:user:lat}}, function(err, result) {
-      if(err) {
-        console.log("couldnt save user data for "+JSON.stringify(user));
-        console.log(err);
-        // 500: internal server error
-        res.status(500).send({
-          code : 500,
-          msg : "Could not connect to database, see server logs or contact admin"
-        });
-        return    
-      }
-      // it worked
-      res.status(200).send({
-        code : 200,
-        msg : "success"
-      });
-    });
+    collection.profiles.update(
+    {_id: 556db90ae4b03d041b59c8aa}
+    { $push: { lat: 42}}
+    )
   });
 });
 
