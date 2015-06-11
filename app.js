@@ -53,8 +53,24 @@ app.get('/api/users/new', function(req, res) {
   var user = {
     email: req.query.email,
     pass: req.query.pass,
-    type: req.query.type
+    type: req.query.type,
+    premium: false,
+    points: [],
+    devices: [],
+    beta: {
+      sessions: []
+    }
   };
+  user.devices.push({
+    name: req.query.device_name,
+    os: req.query.device_os,
+    app_version: req.query.device_app_ver,
+    screen: {
+      width: req.query.device_screen_width,
+      height: req.query.device_screen_height,
+      ppi: req.query.device_screen_ppi
+    }
+  });
   
   // connect to the database
   MongoClient.connect(connectQuery, function(err, db) {
@@ -173,6 +189,17 @@ app.get('/api/users/login', function(req,res)
 {
   var email = req.query.email;
   var pass = req.query.pass;
+  
+  var device = {
+    name: req.query.device_name,
+    os: req.query.device_os,
+    app_version: req.query.device_app_ver,
+    screen: {
+      width: req.query.device_screen_width,
+      height: req.query.device_screen_height,
+      ppi: req.query.device_screen_ppi
+    }
+  }
 
   MongoClient.connect(connectQuery, function(err, db) {
     if(err) {
@@ -201,7 +228,29 @@ app.get('/api/users/login', function(req,res)
           return;
         }
 
-        if(doc!=null){
+        if(doc!=null) {
+          var profiles = doc.profiles.filter(function(obj) {
+            if(obj.email==email && obj.pass==pass) {
+              return true;
+            } 
+            return false;
+          });
+          if (profiles.length > 0) {
+            if (profiles[0].devices.map(function(e) { return e.name; }).indexOf(device.name) == -1) {
+              collection.update({
+                'name':'profiles', 
+                'profiles.email':email,
+                'profiles.pass': pass}, {$push:{"profiles.0.devices":device}}, function(err, result) {
+                if(err) {
+                  console.log("could not save device");
+                  console.log(err);
+                }
+              });
+            } else {
+              // already have device on record
+            }
+          }
+          
           res.status(200).send({
             code : 200,
             msg : "true"
