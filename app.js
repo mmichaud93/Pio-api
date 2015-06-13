@@ -109,32 +109,6 @@ app.get('/api/users/new', function(req, res) {
   });
 });
 
-app.get('/api/users/add/lat', function(req, res) {
-    
-  // connect to the database
-  MongoClient.connect(connectQuery, function(err, db) {
-    if (err) {
-      console.log("error connecting to the database for: "+req.ip);
-      console.log(err);
-      // 500: internal server error
-      res.status(500).send({
-        code : 500,
-        msg : "Could not connect to database, see server logs or contact admin"
-      });
-      return;
-    }
-    
-    // get the collection
-    var collection = db.collection('pio-api-collection');
-    
-    // update the collection by adding the user object to the profiles array
-    collection.profiles.update(
-    {_id: 556db90ae4b03d041b59c8aa}
-    { $push: { lat: 42}}
-    )
-  });
-});
-
 
 app.get('/api/users/exist', function(req, res) 
 {
