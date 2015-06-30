@@ -1,6 +1,5 @@
 var express = require('express');
 var MongoClient = require('mongodb').MongoClient;
-var tokenAuth = require('./tokenauth');
 
 var app = express();
 
