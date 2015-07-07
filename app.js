@@ -221,7 +221,14 @@ app.get('/api/users/login', function(req,res)
       }
     );
   });
-  }});
+  } else {
+    res.status(400).send({
+      code:400,
+      msg: "invalid toke"
+    });
+    return;
+  }
+  });
 });
 
 
