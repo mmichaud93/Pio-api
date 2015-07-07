@@ -221,7 +221,13 @@ app.get('/api/users/login', function(req,res)
       }
     );
   });
-  }});
+  } else {
+      res.status(498).send({
+        code:498,
+        msg: "invalid token"
+      });
+      return;
+});
 });
 
 
