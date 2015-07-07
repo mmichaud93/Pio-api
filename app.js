@@ -221,7 +221,7 @@ app.get('/api/users/login', function(req,res)
       }
     );
   });
-  }}
+  }});
 });
 
 
