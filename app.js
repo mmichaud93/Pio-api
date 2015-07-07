@@ -221,12 +221,12 @@ app.get('/api/users/login', function(req,res)
       }
     );
   });
-  } else {
-      res.status(498).send({
-        code:498,
-        msg: "invalid token"
-      });
-      return;
+  }
+  else{
+    res.status(400).send({
+      code : 400,
+      msg : "bad data: "+badData
+  }
 });
 });
 
