@@ -149,6 +149,8 @@ app.get('/api/users/exist', function(req, res)
 
 app.get('/api/users/login', function(req,res)
 {
+  authToken(req.query.access_token || req.headers['x-access-token'], function(valid) {
+  if(valid){
   var email = req.query.email;
   var pass = req.query.pass;
   
@@ -219,6 +221,7 @@ app.get('/api/users/login', function(req,res)
       }
     );
   });
+  }}
 });
 
 
