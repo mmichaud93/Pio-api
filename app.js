@@ -242,6 +242,66 @@ app.get('/api/users/login', function(req,res)
 
 
 
+app.get('/api/beta/signup_email', function(req,res) {
+  var email = req.query.email;
+  
+  MongoClient.connect(connectQuery, function(err, db) {
+    if(err) {
+      console.log("error connecting to the database");
+      console.log(err);
+      res.status(500).send({
+        code : 500,
+        msg : "Could not connect to database, see server logs or contact admin"
+      });
+      return;
+    }
+    var collection = db.collection('pio-api-collection');
+    var emailCollection = collection.findOne(
+      {
+        'name':'beta',
+        'signup.emails':email
+      }, function(err, doc) {
+        if(err) {
+          console.log("could not access beta document");
+          console.log(err);
+          res.status(500).send({
+            code : 500,
+            msg : "Could not connect to database, see server logs or contact admin"
+          });
+          return;
+        }
+        if(!doc) {
+          // update the collection by adding the user object to the profiles array
+          collection.update({'name':'beta'}, {$push:{"signup.emails":email}}, function(err, result) {
+            if(err) {
+              console.log("couldnt save email for "+email);
+              console.log(err);
+              // 500: internal server error
+              res.status(500).send({
+                code : 500,
+                msg : "Could not connect to database, see server logs or contact admin"
+              });
+              return    
+            }
+            // it worked
+            res.status(200).send({
+              code : 200,
+              msg : "success"
+            });
+          });  
+        } else {
+          res.status(200).send({
+            code : 200,
+            msg : "email already registered"
+          });
+        }
+      }
+    );
+  });
+});
+
+
+
 function authToken(token, callback) {
   if(token) {
     MongoClient.connect(connectQuery, function(err, db) {
