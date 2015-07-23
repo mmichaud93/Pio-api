@@ -1,0 +1,227 @@
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Pio</title>
+    <link rel="apple-touch-icon" sizes="57x57" href="/img/favicon/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/img/favicon/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/img/favicon/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/img/favicon/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/img/favicon/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/img/favicon/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/img/favicon/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/img/favicon/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192"  href="/img/favicon/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/img/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/img/favicon/manifest.json">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="/img/favicon/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+    <link href="styles.css" rel="stylesheet" media="screen">
+    
+    <link href='http://fonts.googleapis.com/css?family=Lato|Montserrat' rel='stylesheet' type='text/css'>
+
+    <script src="http://maps.google.com/maps/api/js?sensor=false" 
+               type="text/javascript"></script> 
+               <script>
+                 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                 (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                 m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                 })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+                 ga('create', 'UA-50420831-5', 'auto');
+                 ga('send', 'pageview');
+
+               </script>
+  </head>
+
+  <script>
+    
+    var points = [];
+    var previousPoint = undefined;
+    
+    var addresses = [
+      '1 Park St Boston, MA 02108',
+      '45 W 34th St, New York, NY 10001',
+      '3 Whitehall, London, UK',
+      'Japan, 〒100-0005 Tōkyō-to, Chiyoda-ku, Marunouchi, 1 Chome−4−6 日本工業倶楽部会館',
+      'El Tahrir, Egypt',
+      '188 O\'Farrell St, San Francisco, CA 94102',
+      '13-07 Bellair Ave Fair Lawn, NJ 07410',
+      '15 Rue de Seine, 75006 Paris, France',
+      '180 W Adams St, Chicago, IL 60603',
+      '800 Independence Ave SW, Washington, DC 20024',
+      'Красота И Здоровье Stop В Арке, ulitsa Bolshaya Ordynka, 7с1, Moskva, Russia, 115035',
+      'China, 国家博物馆',
+      '36 Hickson Rd, Millers Point NSW 2000, Australia',
+      '1198 Alaskan Way, Seattle, WA 98101',
+      '834 S Congress Ave, Austin, TX 78704',
+      '192 Fort Pond Inn, Lancaster, MA 01523'
+    ];
+  
+    window.onload = function() {
+      
+      var map = new google.maps.Map(document.getElementById('map'), { 
+          mapTypeId: google.maps.MapTypeId.HYBRID,
+          zoom: 16,
+          disableDefaultUI: true
+      });
+
+      var geocoder = new google.maps.Geocoder();
+      var addressI = Math.ceil(Math.random()*addresses.length)-1;
+      var address = addresses[addressI];
+
+      geocoder.geocode({
+         'address': address
+      }, 
+      function(results, status) {
+         if(status == google.maps.GeocoderStatus.OK) {
+
+            map.setCenter(results[0].geometry.location);
+         }
+         else {
+            
+         }
+      });
+      
+      canvas = document.getElementById("canvas");
+      context = canvas.getContext("2d");
+      
+      document.onmousemove = function(event) {
+        if(previousPoint) {
+          drawNewPoints(event.clientX, event.clientY);
+        }
+        previousPoint = {
+          x: event.clientX, 
+          y: event.clientY
+        };
+        points.push(previousPoint);
+
+      }
+
+      resizeCanvas();
+      onDraw();
+      
+      if(getUrlVars().success=="true") {
+        document.getElementById("signup_success").style.visibility = "visible";
+      }
+    }
+    
+    window.onmouseout = function() {
+
+      previousPoint = undefined;
+      points.push(previousPoint);
+    }
+    
+    window.onresize = function() {
+      resizeCanvas();
+      onDraw();
+    }
+    
+    function resizeCanvas() {
+      canvas.width = document.body.clientWidth;
+      canvas.height = document.body.clientHeight;
+    }
+    
+    function onDraw() {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      
+      context.globalAlpha=0.9;
+      context.fillStyle = 'white';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      previousPoint = points[0];
+      for(var p = 1; p < points.length; p++) {
+        if(points[p] && previousPoint) {
+          drawNewPoints(points[p].x, points[p].y);
+        }
+        previousPoint = points[p];
+      }
+    }
+    
+    function drawNewPoints(x, y) {
+      
+      context.save();
+      
+      var distance = Math.sqrt((x-previousPoint.x)*(x-previousPoint.x)+(y-previousPoint.y)*(y-previousPoint.y));
+      context.fillStyle = "rgb(255, 255, 255)";
+      context.globalCompositeOperation = "destination-out";  
+      context.fillStyle = ("rgba(255,255,255,255)");
+
+      for(var i = 0; i < distance; i+=4) {
+        context.beginPath();
+        context.arc(
+          previousPoint.x + (x - previousPoint.x)/distance*i, 
+          previousPoint.y + (y - previousPoint.y)/distance*i, 8, 0, 2 * Math.PI, false
+        );
+
+        context.fill();
+      }      
+    }
+    
+    function getUrlVars() {
+      var vars = {};
+      var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+        vars[key] = value;
+      });
+      return vars;
+    }
+    
+    function closeClick() {
+      document.getElementById("signup_success").style.visibility = "hidden";
+    }
+  </script>
+
+  <body>
+    <div style="position: relative;">
+      <canvas id="canvas" style="position: absolute; left: 0; top: 0; z-index: 1;">
+      </canvas>
+      <div class="container" style="position: relative; z-index: 2;">
+        <div class="header" style="position: absolute; left: 0; top: 0; z-index: 2;">
+          <div style="margin-left:24px;">Pio</div>
+        </div>
+        
+      </div>
+    </div>
+    <div class="content" style="position: absolute; left: 0; bottom: 0; z-index: 3;">
+      <div class="title">Pio is the app that tracks every adventure you take</div>
+      <div style="height:1px; background-color:#ffffff; width:80%; margin-left:10%;"></div>
+      <div class="subtitle">Record your movements, uncover parts of the map, and compete with friends</div>
+      <!-- <div class="features">
+        <span class="achievements feature">
+          <img src="./img/ribbon.png"></img>
+          <div>Unlock achievements</div>
+        </span>
+        <span class="stats feature">
+          <img src="./img/clipboard.png"></img>
+          <div>Tracks your stats</div>
+        </span>
+        <span class="leaderboards feature">
+          <img src="./img/star.png"></img>
+          <div>Compete with friends</div>
+        </span>
+      </div> -->
+
+      
+      <div class="beta">
+        <div class="beta_message">Sign up for the Android beta and begin exploring the world!</div>
+        <form action="/beta_email.php" method="post">
+            <input name="email" type="email" placeholder="email"/>
+            <button class="submitButton" type="submit">Submit</button>
+        </form>
+      </div>
+    </div>
+    <div id="signup_success" style="position: absolute; left: 0; right: 0; top: 0; z-index: 4;">
+      <div class="close" onclick="closeClick()" style="position: absolute; right: 0;">x</div>
+      <div class="signup_content" style="margin-top:32px; padding-right:16px; padding-left:16px;">
+        Thank you for signing up for the beta! We'll let you know how to get started as soon as we've put on the finishing touches.
+      </div>
+    </div>
+    <div id="map" style="position: absolute; left: 0; top: 0;"></div>     
+  </body>
+  
+</html>
