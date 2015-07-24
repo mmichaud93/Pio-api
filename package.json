@@ -6,6 +6,7 @@
 	"private":true,
 	"dependencies": {
 		"express":"4.x",
-		"mongodb":"x"
+		"mongodb":"x",
+		"body-parser":"1.x"
 	}
 }

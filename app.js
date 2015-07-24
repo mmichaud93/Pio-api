@@ -1,7 +1,9 @@
-var express = require('express');
+var app = require('express')();
 var MongoClient = require('mongodb').MongoClient;
+var bodyParser = require('body-parser');
 
-var app = express();
+app.use(bodyParser.json()); // for parsing application/json
+app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
 var port = Number(process.env.PORT || 53535);
 
@@ -21,7 +23,10 @@ MongoClient.connect(connectQuery, function(err, db) {
 
 
 app.get('/api', function(req, res) {
-  res.send({name:req.query.name});
+  res.status(200).send({
+    code : 200,
+    msg : "all good"
+  });
 });
 
 /**
@@ -30,7 +35,8 @@ app.get('/api', function(req, res) {
  * ex. pio-api.heroku.com/api/newUser?email=kusdkdjfgskjdgfjxg&pass=skaskdjhkdjhksjdjhf&type=yuegjhbn
  */
  app.get('/api/users/new', function(req, res) {
-
+   authToken(req.query.access_token || req.headers['x-access-token'], function(valid) {
+     if(valid) {
    if(!(req.query.email && req.query.pass && req.query.type)) {
      // invalid user post
      var badData = undefined;
@@ -50,13 +56,19 @@ app.get('/api', function(req, res) {
    }
 
    // create a user object to be stored in the database
+   var currentTime = Date.now();
    var user = {
+     name: "",
      email: req.query.email,
      pass: req.query.pass,
      type: req.query.type,
+     image: "",
+     xp: 0,
+     createdAt: currentTime,
+     lastUpdated: currentTime,
      premium: false,
-     points: [],
      devices: [],
+     monuments: [],
      beta: {
        sessions: []
      }
@@ -65,6 +77,7 @@ app.get('/api', function(req, res) {
      name: req.query.device_name,
      os: req.query.device_os,
      app_version: req.query.device_app_ver,
+     addedAt: currentTime,
      screen: {
        width: req.query.device_screen_width,
        height: req.query.device_screen_height,
@@ -91,19 +104,19 @@ app.get('/api', function(req, res) {
        // it worked
        res.status(200).send({
          code : 200,
-         msg : "success"
+         msg : "success",
+         profile: user
        });
      });
    });
-   { else {
-     res.status(400).send({
-       code:400,
-       msg: "invalid toke"
-     });
-     return;
-   }
-
-   }
+ } else {
+   res.status(498).send({
+     code:498,
+     msg: "invalid token"
+   });
+   return;
+ }
+});
  });
 
 app.get('/api/users/exist', function(req, res)
@@ -162,11 +175,12 @@ app.get('/api/users/login', function(req,res)
   if(valid){
   var email = req.query.email;
   var pass = req.query.pass;
-
+  var currentTime = Date.now();
   var device = {
     name: req.query.device_name,
     os: req.query.device_os,
     app_version: req.query.device_app_ver,
+    addedAt: currentTime,
     screen: {
       width: req.query.device_screen_width,
       height: req.query.device_screen_height,
@@ -202,8 +216,7 @@ app.get('/api/users/login', function(req,res)
             if (profiles[0].devices.map(function(e) { return e.name; }).indexOf(device.name) == -1) {
               collection.update({
                 'name':'profiles',
-                'profiles.email':email,
-                'profiles.pass': pass}, {$push:{"profiles.0.devices":device}}, function(err, result) {
+                'profiles.email':email}, {$push:{"profiles.$.devices":device}}, function(err, result) {
                 if(err) {
                   console.log("could not save device");
                   console.log(err);
@@ -212,12 +225,19 @@ app.get('/api/users/login', function(req,res)
             } else {
               // already have device on record
             }
+            res.status(200).send({
+              code : 200,
+              msg : "true",
+              profile : profiles[0]
+            });
+          } else {
+            res.status(400).send({
+              code:400,
+              msg: "could not find user"
+            });
           }
 
-          res.status(200).send({
-            code : 200,
-            msg : "true"
-          });
+          
           return;
         }
         else{
@@ -233,13 +253,92 @@ app.get('/api/users/login', function(req,res)
   } else {
     res.status(400).send({
       code:400,
-      msg: "invalid toke"
+      msg: "invalid token"
     });
     return;
   }
   });
 });
 
+
+app.post('/api/users/push', function(req, res) {
+  authToken(req.query.access_token || req.headers['x-access-token'], function(valid) {
+  if(valid){
+    
+    var profile = req.body;
+    
+    MongoClient.connect(connectQuery, function(err, db) {
+      if(err) {
+        sendDbError(res, err);
+        return;
+      }
+      var collection = db.collection('pio-api-collection');
+      
+      var emailCollection = collection.findOne(
+        {
+          'name':'profiles',
+          'profiles.email':profile.email,
+          'profiles.pass': profile.pass,
+        }, function(err, doc) {
+          if(err) {
+            sendDbError(res, err);
+            return;
+          }
+
+          if(doc!=null) {
+            var profiles = doc.profiles.filter(function(obj) {
+              if(obj.email==profile.email && obj.pass==profile.pass) {
+                return true;
+              }
+              return false;
+            });
+            if (profiles.length > 0) {
+              collection.update({
+                "name":"profiles",
+                "profiles.email":profile.email}, {$set:{
+                  "profiles.$.monuments":profile.monuments,
+                  "profiles.$.xp":profile.xp,
+                  "profiles.$.lastUpdated":profile.lastUpdated
+                  }}, function(err, result) {
+                if(err) {
+                  console.log("could not save device");
+                  console.log(err);
+                } else {
+                  res.status(200).send({
+                    code:200,
+                    msg: "success"
+                  });
+                }
+              });
+            } else {
+              res.status(400).send({
+                code:400,
+                msg: "could not find user"
+              });
+            }
+
+            
+            return;
+          }
+          else{
+            res.status(200).send({
+              code : 200,
+              msg : "false"
+            });
+            return;
+           }
+        }
+      );
+    });
+  } else {
+    res.status(498).send({
+      code:498,
+      msg: "invalid token"
+    });
+    return;
+  }
+  });
+});
 
 
 app.get('/api/beta/signup_email', function(req,res) {
