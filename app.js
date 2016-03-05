@@ -127,7 +127,7 @@ app.get('/api/users/exist', function(req, res)
   authToken(req.query.access_token || req.headers['x-access-token'], function(valid) {
     if(!valid) {
       res.status(498).send({
-        code:498,
+        code: 498,
         msg: "invalid token"
       });
       return;
@@ -173,7 +173,7 @@ app.get('/api/users/login', function(req,res) {
   authToken(req.query.access_token || req.headers['x-access-token'], function(valid) {
     if(!valid) {
       res.status(498).send({
-        code:498,
+        code: 498,
         msg: "invalid token"
       });
       return;
@@ -209,7 +209,7 @@ app.get('/api/users/login', function(req,res) {
     }
 
     MongoClient.connect(connectQuery, function(err, db) {
-      if(err) {
+      if (err) {
         sendDbError(res, err);
         return;
       }
@@ -220,19 +220,20 @@ app.get('/api/users/login', function(req,res) {
           'profiles.email':email,
           'profiles.pass': pass,
         }, function(err, doc) {
-          if(err) {
+          if (err) {
             sendDbError(res, err);
             return;
           }
 
-          if(doc!=null) {
+          if (doc!=null) {
             var profiles = doc.profiles.filter(function(obj) {
-              if(obj.email==email && obj.pass==pass) {
+              if (obj.email==email && obj.pass==pass) {
                 return true;
               }
               return false;
             });
             if (profiles.length > 0) {
+              // update the devices to include the one used to login with
               if (profiles[0].devices.map(function(e) { return e.name; }).indexOf(device.name) == -1) {
                 collection.update({
                   'name':'profiles',
@@ -245,6 +246,7 @@ app.get('/api/users/login', function(req,res) {
               } else {
                 // already have device on record
               }
+              // login successful, return the user profile
               res.status(200).send({
                 code : 200,
                 msg : "true",
@@ -270,10 +272,16 @@ app.get('/api/users/login', function(req,res) {
   });
 });
 
-
+// update user profile
 app.post('/api/users/push', function(req, res) {
   authToken(req.query.access_token || req.headers['x-access-token'], function(valid) {
-  if(valid){
+    if(!valid) {
+      res.status(498).send({
+        code: 498,
+        msg: "invalid token"
+      });
+      return;
+    }
     
     var profile = req.body;
     
@@ -311,8 +319,10 @@ app.post('/api/users/push', function(req, res) {
                   "profiles.$.lastUpdated":profile.lastUpdated
                   }}, function(err, result) {
                 if(err) {
-                  console.log("could not save device");
-                  console.log(err);
+                  res.status(500).send({
+                    code:500,
+                    msg: "could not update user"
+                  });
                 } else {
                   res.status(200).send({
                     code:200,
@@ -326,27 +336,17 @@ app.post('/api/users/push', function(req, res) {
                 msg: "could not find user"
               });
             }
-
-            
             return;
-          }
-          else{
-            res.status(200).send({
-              code : 200,
-              msg : "false"
+          } else {
+            res.status(400).send({
+              code:500,
+              msg: "could not find user"
             });
             return;
-           }
+          }
         }
       );
     });
-  } else {
-    res.status(498).send({
-      code:498,
-      msg: "invalid token"
-    });
-    return;
-  }
   });
 });
 
