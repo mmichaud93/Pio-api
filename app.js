@@ -68,6 +68,9 @@ app.get('/api', function(req, res) {
        email: req.query.email,
        pass: req.query.pass,
        type: req.query.type,
+       facebook: {
+         access_token: req.query.fb_access_token
+       },
        image: "",
        xp: 0,
        createdAt: currentTime,
