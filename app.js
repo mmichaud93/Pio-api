@@ -36,136 +36,136 @@ app.get('/api', function(req, res) {
  */
  app.get('/api/users/new', function(req, res) {
    authToken(req.query.access_token || req.headers['x-access-token'], function(valid) {
-     if(valid) {
-   if(!(req.query.email && req.query.pass && req.query.type)) {
-     // invalid user post
-     var badData = undefined;
-     if(!req.query.email) {
-       badData = "email";
-     } else if(!req.query.pass) {
-       badData = "pass";
-     } else if(!req.query.type) {
-       badData = "type";
+     if(!valid) {
+       res.status(498).send({
+         code:498,
+         msg: "invalid token"
+       });
+       return;
      }
-     // 400: Bad Data
-     res.status(400).send({
-       code : 400,
-       msg : "bad data: "+badData
-     });
-     return;
-   }
-
-   // create a user object to be stored in the database
-   var currentTime = Date.now();
-   var user = {
-     name: "",
-     email: req.query.email,
-     pass: req.query.pass,
-     type: req.query.type,
-     image: "",
-     xp: 0,
-     createdAt: currentTime,
-     lastUpdated: currentTime,
-     premium: false,
-     devices: [],
-     monuments: [],
-     beta: {
-       sessions: []
-     }
-   };
-   user.devices.push({
-     name: req.query.device_name,
-     os: req.query.device_os,
-     app_version: req.query.device_app_ver,
-     addedAt: currentTime,
-     screen: {
-       width: req.query.device_screen_width,
-       height: req.query.device_screen_height,
-       ppi: req.query.device_screen_ppi
-     }
-   });
-
-   // connect to the database
-   MongoClient.connect(connectQuery, function(err, db) {
-     if (err) {
-       sendDbError(res, err);
+     if(!(req.query.email && req.query.pass && req.query.type)) {
+       // invalid user post
+       var badData = undefined;
+       if(!req.query.email) {
+         badData = "email";
+       } else if(!req.query.pass) {
+         badData = "pass";
+       } else if(!req.query.type) {
+         badData = "type";
+       }
+       // 400: Bad Data
+       res.status(400).send({
+         code : 400,
+         msg : "bad data: "+badData
+       });
        return;
      }
 
-     // get the collection
-     var collection = db.collection('pio-api-collection');
-
-     // update the collection by adding the user object to the profiles array
-     collection.update({'name':'profiles'}, {$push:{profiles:user}}, function(err, result) {
-       if(err) {
-         sendDbError(res, err);
-         return
+     // create a user object to be stored in the database
+     var currentTime = Date.now();
+     var user = {
+       name: "",
+       email: req.query.email,
+       pass: req.query.pass,
+       type: req.query.type,
+       image: "",
+       xp: 0,
+       createdAt: currentTime,
+       lastUpdated: currentTime,
+       premium: false,
+       devices: [],
+       monuments: [],
+       beta: {
+         sessions: []
        }
-       // it worked
-       res.status(200).send({
-         code : 200,
-         msg : "success",
-         profile: user
+     };
+     if (req.query.device_name && req.query.device_os && req.query.device_app_ver && 
+          req.query.device_screen_width && req.query.device_screen_height && req.query.device_screen_ppi) {
+       user.devices.push({
+         name: req.query.device_name,
+         os: req.query.device_os,
+         app_version: req.query.device_app_ver,
+         addedAt: currentTime,
+         screen: {
+           width: req.query.device_screen_width,
+           height: req.query.device_screen_height,
+           ppi: req.query.device_screen_ppi
+         }
+       });
+     }
+
+     // connect to the database
+     MongoClient.connect(connectQuery, function(err, db) {
+       if (err) {
+         sendDbError(res, err);
+         return;
+       }
+
+       // get the collection
+       var collection = db.collection('pio-api-collection');
+
+       // update the collection by adding the user object to the profiles array
+       collection.update({'name':'profiles'}, {$push:{profiles:user}}, function(err, result) {
+         if(err) {
+           sendDbError(res, err);
+           return
+         }
+         // it worked
+         res.status(200).send({
+           code : 200,
+           msg : "success",
+           profile: user
+         });
        });
      });
    });
- } else {
-   res.status(498).send({
-     code:498,
-     msg: "invalid token"
-   });
-   return;
- }
-});
  });
 
 app.get('/api/users/exist', function(req, res)
 {
   // make this call in each api method to be sure whoever is using our api is on the list
   authToken(req.query.access_token || req.headers['x-access-token'], function(valid) {
-    if(valid) {
-      var email = req.query.email;
-
-      MongoClient.connect(connectQuery, function(err, db) {
-        if(err) {
-          sendDbError(res, err);
-          return;
-        }
-        var collection = db.collection('pio-api-collection');
-        var emailCollection = collection.findOne(
-          {
-            'name':'profiles',
-            'profiles.email':email
-          }, function(err, doc) {
-            if(err) {
-              sendDbError(res, err);
-              return;
-            }
-
-            if(doc!=null){
-              res.status(200).send({
-                code : 200,
-                msg : "true"
-              });
-              return;
-            }
-            else{
-              res.status(200).send({
-                code : 200,
-                msg : "false"
-              });
-              return;
-            }
-          }
-        );
-      });
-    } else {
+    if(!valid) {
       res.status(498).send({
         code:498,
         msg: "invalid token"
       });
       return;
     }
+    var email = req.query.email;
+
+    MongoClient.connect(connectQuery, function(err, db) {
+      if(err) {
+        sendDbError(res, err);
+        return;
+      }
+      var collection = db.collection('pio-api-collection');
+      var emailCollection = collection.findOne(
+        {
+          'name':'profiles',
+          'profiles.email':email
+        }, function(err, doc) {
+          if(err) {
+            sendDbError(res, err);
+            return;
+          }
+
+          if(doc!=null) {
+            res.status(200).send({
+              code : 200,
+              msg : "true"
+            });
+            return;
+          } else {
+            res.status(200).send({
+                code : 200,
+                msg : "false"
+              });
+            return;
+          }
+        }
+      );
+    });    
   });
 });
 
