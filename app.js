@@ -69,7 +69,7 @@ app.get('/api', function(req, res) {
        pass: req.query.pass,
        type: req.query.type,
        facebook: {
-         access_token: req.query.fb_access_token
+         user_id: req.query.fb_user_id
        },
        image: "",
        xp: 0,
@@ -353,6 +353,124 @@ app.post('/api/users/push', function(req, res) {
   });
 });
 
+// get pio profile from fb user_id
+app.get('/api/users/fb/get/:fb_user_id', function(req, res)
+{
+  authToken(req.query.access_token || req.headers['x-access-token'], function(valid) {
+    if(!valid) {
+      res.status(498).send({
+        code: 498,
+        msg: "invalid token"
+      });
+      return;
+    }
+    if (!req.params.fb_user_id) {
+      // 400: Bad Data
+      res.status(400).send({
+        code : 400,
+        msg : "bad data: fb_user_id"
+      });
+      return;
+    }
+    fb_user_id = req.params.fb_user_id
+    
+    MongoClient.connect(connectQuery, function(err, db) {
+      if(err) {
+        sendDbError(res, err);
+        return;
+      }
+      var collection = db.collection('pio-api-collection');
+      var emailCollection = collection.findOne(
+        {
+          'name':'profiles',
+          'profiles.facebook.user_id':fb_user_id
+        }, function(err, doc) {
+          if(err) {
+            sendDbError(res, err);
+            return;
+          }
+
+          if(doc!=null) {
+            var profiles = doc.profiles.filter(function(obj) {
+              if (obj.facebook.user_id==fb_user_id) {
+                return true;
+              }
+              return false;
+            });
+            if (profiles.length > 0) {
+              var friendsProfile = {
+                name: profiles[0].name,
+                image: profiles[0].image,
+                xp: profiles[0].xp,
+                monuments: profiles[0].monuments
+              };
+              res.status(200).send({
+                code : 200,
+                msg : "true",
+                friends_profile : friendsProfile
+              });
+              return;
+            }
+          } else {
+            res.status(404).send({
+                code : 404,
+                msg : "could not find profile for user."
+              });
+            return;
+          }
+        }
+      );
+    });  
+  });
+});
+// check to see if a facebook user is already registered
+app.get('/api/users/fb/exists', function(req, res)
+{
+  // make this call in each api method to be sure whoever is using our api is on the list
+  authToken(req.query.access_token || req.headers['x-access-token'], function(valid) {
+    if(!valid) {
+      res.status(498).send({
+        code: 498,
+        msg: "invalid token"
+      });
+      return;
+    }
+    var fb_user_id = req.query.fb_user_id;
+
+    MongoClient.connect(connectQuery, function(err, db) {
+      if(err) {
+        sendDbError(res, err);
+        return;
+      }
+      var collection = db.collection('pio-api-collection');
+      var emailCollection = collection.findOne(
+        {
+          'name':'profiles',
+          'profiles.facebook.user_id':fb_user_id
+        }, function(err, doc) {
+          if(err) {
+            sendDbError(res, err);
+            return;
+          }
+
+          if(doc!=null) {
+            res.status(200).send({
+              code : 200,
+              msg : "true"
+            });
+            return;
+          } else {
+            res.status(200).send({
+                code : 200,
+                msg : "false"
+              });
+            return;
+          }
+        }
+      );
+    });    
+  });
+});
 
 app.get('/api/beta/signup_email', function(req,res) {
   var email = req.query.email;
