@@ -169,94 +169,104 @@ app.get('/api/users/exist', function(req, res)
   });
 });
 
-app.get('/api/users/login', function(req,res)
-{
+app.get('/api/users/login', function(req,res) {
   authToken(req.query.access_token || req.headers['x-access-token'], function(valid) {
-  if(valid){
-  var email = req.query.email;
-  var pass = req.query.pass;
-  var currentTime = Date.now();
-  var device = {
-    name: req.query.device_name,
-    os: req.query.device_os,
-    app_version: req.query.device_app_ver,
-    addedAt: currentTime,
-    screen: {
-      width: req.query.device_screen_width,
-      height: req.query.device_screen_height,
-      ppi: req.query.device_screen_ppi
-    }
-  }
-
-  MongoClient.connect(connectQuery, function(err, db) {
-    if(err) {
-      sendDbError(res, err);
+    if(!valid) {
+      res.status(498).send({
+        code:498,
+        msg: "invalid token"
+      });
       return;
     }
-    var collection = db.collection('pio-api-collection');
-    var emailCollection = collection.findOne(
-      {
-        'name':'profiles',
-        'profiles.email':email,
-        'profiles.pass': pass,
-      }, function(err, doc) {
-        if(err) {
-          sendDbError(res, err);
-          return;
-        }
+    if (!(req.query.email && req.query.pass)) {
+      // invalid user post
+      var badData = undefined;
+      if(!req.query.email) {
+        badData = "email";
+      } else if(!req.query.pass) {
+        badData = "pass";
+      }
+      // 400: Bad Data
+      res.status(400).send({
+        code : 400,
+        msg : "bad data: "+badData
+      });
+      return;
+    }
+    var email = req.query.email;
+    var pass = req.query.pass;
+    var currentTime = Date.now();
+    var device = {
+      name: req.query.device_name,
+      os: req.query.device_os,
+      app_version: req.query.device_app_ver,
+      addedAt: currentTime,
+      screen: {
+        width: req.query.device_screen_width,
+        height: req.query.device_screen_height,
+        ppi: req.query.device_screen_ppi
+      }
+    }
 
-        if(doc!=null) {
-          var profiles = doc.profiles.filter(function(obj) {
-            if(obj.email==email && obj.pass==pass) {
-              return true;
-            }
-            return false;
-          });
-          if (profiles.length > 0) {
-            if (profiles[0].devices.map(function(e) { return e.name; }).indexOf(device.name) == -1) {
-              collection.update({
-                'name':'profiles',
-                'profiles.email':email}, {$push:{"profiles.$.devices":device}}, function(err, result) {
-                if(err) {
-                  console.log("could not save device");
-                  console.log(err);
-                }
-              });
-            } else {
-              // already have device on record
-            }
-            res.status(200).send({
-              code : 200,
-              msg : "true",
-              profile : profiles[0]
-            });
-          } else {
-            res.status(400).send({
-              code:400,
-              msg: "could not find user"
-            });
+    MongoClient.connect(connectQuery, function(err, db) {
+      if(err) {
+        sendDbError(res, err);
+        return;
+      }
+      var collection = db.collection('pio-api-collection');
+      var emailCollection = collection.findOne(
+        {
+          'name':'profiles',
+          'profiles.email':email,
+          'profiles.pass': pass,
+        }, function(err, doc) {
+          if(err) {
+            sendDbError(res, err);
+            return;
           }
 
-          
-          return;
+          if(doc!=null) {
+            var profiles = doc.profiles.filter(function(obj) {
+              if(obj.email==email && obj.pass==pass) {
+                return true;
+              }
+              return false;
+            });
+            if (profiles.length > 0) {
+              if (profiles[0].devices.map(function(e) { return e.name; }).indexOf(device.name) == -1) {
+                collection.update({
+                  'name':'profiles',
+                  'profiles.email':email}, {$push:{"profiles.$.devices":device}}, function(err, result) {
+                    if(err) {
+                      console.log("could not save device");
+                      console.log(err);
+                    }
+                  });
+              } else {
+                // already have device on record
+              }
+              res.status(200).send({
+                code : 200,
+                msg : "true",
+                profile : profiles[0]
+              });
+            } else {
+              res.status(400).send({
+                code:400,
+                msg: "could not find user"
+              });
+            }
+            return;
+          } else {
+            res.status(200).send({
+              code : 200,
+              msg : "false"
+            });
+            return;
+          }
         }
-        else{
-          res.status(200).send({
-            code : 200,
-            msg : "false"
-          });
-          return;
-         }
-      }
-    );
-  });
-  } else {
-    res.status(400).send({
-      code:400,
-      msg: "invalid token"
+      );
     });
-    return;
-  }
   });
 });
 
