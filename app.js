@@ -76,6 +76,7 @@ app.get('/api', function(req, res) {
        createdAt: currentTime,
        lastUpdated: currentTime,
        premium: false,
+       stats: [],
        devices: [],
        monuments: [],
        beta: {
@@ -319,7 +320,8 @@ app.post('/api/users/push', function(req, res) {
                 "profiles.email":profile.email}, {$set:{
                   "profiles.$.monuments":profile.monuments,
                   "profiles.$.xp":profile.xp,
-                  "profiles.$.lastUpdated":profile.lastUpdated
+                  "profiles.$.lastUpdated":profile.lastUpdated,
+                  "profiles.$.stats":profile.stats
                   }}, function(err, result) {
                 if(err) {
                   res.status(500).send({
@@ -372,7 +374,6 @@ app.get('/api/users/fb/get/:fb_user_id', function(req, res)
       });
       return;
     }
-    fb_user_id = req.params.fb_user_id
     
     MongoClient.connect(connectQuery, function(err, db) {
       if(err) {
@@ -383,7 +384,7 @@ app.get('/api/users/fb/get/:fb_user_id', function(req, res)
       var emailCollection = collection.findOne(
         {
           'name':'profiles',
-          'profiles.facebook.user_id':fb_user_id
+          'profiles.facebook.user_id':req.params.fb_user_id
         }, function(err, doc) {
           if(err) {
             sendDbError(res, err);
@@ -392,11 +393,12 @@ app.get('/api/users/fb/get/:fb_user_id', function(req, res)
 
           if(doc!=null) {
             var profiles = doc.profiles.filter(function(obj) {
-              if (obj.facebook.user_id==fb_user_id) {
+              if (obj.facebook.user_id==req.params.fb_user_id) {
                 return true;
               }
               return false;
             });
+            //console.log(profiles);
             if (profiles.length > 0) {
               var friendsProfile = {
                 name: profiles[0].name,
@@ -435,7 +437,6 @@ app.get('/api/users/fb/exists', function(req, res)
       });
       return;
     }
-    var fb_user_id = req.query.fb_user_id;
 
     MongoClient.connect(connectQuery, function(err, db) {
       if(err) {
@@ -446,7 +447,7 @@ app.get('/api/users/fb/exists', function(req, res)
       var emailCollection = collection.findOne(
         {
           'name':'profiles',
-          'profiles.facebook.user_id':fb_user_id
+          'profiles.facebook.user_id':req.query.fb_user_id
         }, function(err, doc) {
           if(err) {
             sendDbError(res, err);
